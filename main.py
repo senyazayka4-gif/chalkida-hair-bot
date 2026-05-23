@@ -39,20 +39,23 @@ async def on_startup(bot: Bot):
     logger.info("Spawning OSINT Lead Parser background worker...")
     asyncio.create_task(run_telethon_parser(bot))
     
-    # Notify admins about startup
-    for admin_id in config.ADMIN_IDS:
-        try:
-            await bot.send_message(
-                chat_id=admin_id,
-                text="🚀 *Бот Студии Парикмахерского Искусства (Халкида) успешно запущен!*\n\n"
-                     "🟢 База данных подключена.\n"
-                     "⏰ Шедулер напоминаний активен.\n"
-                     "🔎 OSINT-парсер лидов запущен в фоновом режиме.\n\n"
-                     "Используйте команду /start для открытия меню.",
-                parse_mode="Markdown"
-            )
-        except Exception as e:
-            logger.warning(f"Could not send startup message to admin {admin_id}: {e}")
+    # Notify admins about startup in the background to prevent blocking
+    async def notify_admins():
+        for admin_id in config.ADMIN_IDS:
+            try:
+                await bot.send_message(
+                    chat_id=admin_id,
+                    text="🚀 *Бот Студии Парикмахерского Искусства (Халкида) успешно запущен!*\n\n"
+                         "🟢 База данных подключена.\n"
+                         "⏰ Шедулер напоминаний активен.\n"
+                         "🔎 OSINT-парсер лидов запущен в фоновом режиме.\n\n"
+                         "Используйте команду /start для открытия меню.",
+                    parse_mode="Markdown"
+                )
+            except Exception as e:
+                logger.warning(f"Could not send startup message to admin {admin_id}: {e}")
+
+    asyncio.create_task(notify_admins())
 
 def start_dummy_web_server():
     """
