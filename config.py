@@ -78,14 +78,6 @@ PORTFOLIO_ITEMS = [
         "photo": "https://raw.githubusercontent.com/senyazayka4-gif/chalkida-hair-bot/main/assets/bob_haircut.png"
     },
     {
-        "id": "style_cascade",
-        "title": "💇‍♀️ Многослойный Каскад (Cascading Cut)",
-        "description": "Объемная, текстурная стрижка слоями, создающая легкое и воздушное движение волос. Подходит для волос любой длины.",
-        "duration": "1 час",
-        "price": "15-20€",
-        "photo": "https://raw.githubusercontent.com/senyazayka4-gif/chalkida-hair-bot/main/assets/cascade_haircut.png"
-    },
-    {
         "id": "style_pixie",
         "title": "💇‍♀️ Текстурный Пикси (Modern Pixie)",
         "description": "Стильная, смелая и ультрапрактичная короткая стрижка, которая подчеркивает черты лица и не требует абсолютно никакого ухода.",
