@@ -118,11 +118,10 @@ async def main():
         
     import socket
     from aiogram.client.session.aiohttp import AiohttpSession
-    from aiohttp import TCPConnector
 
     # Force strictly IPv4 connection to bypass unreachable IPv6 addresses in cloud environment
-    connector = TCPConnector(family=socket.AF_INET)
-    session = AiohttpSession(connector=connector)
+    session = AiohttpSession()
+    session._connector_init["family"] = socket.AF_INET
     bot = Bot(token=config.BOT_TOKEN, session=session)
     
     # Using memory storage for FSM states
