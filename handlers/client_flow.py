@@ -1,4 +1,5 @@
 import json
+import html
 from aiogram import Router, F, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
@@ -254,8 +255,9 @@ async def show_client_cabinet(callback: CallbackQuery, state: FSMContext):
         await callback.answer()
         await state.clear()  # Clear state just in case FSM is active
         
+        import html
         tg_id = callback.from_user.id
-        fullname = callback.from_user.full_name
+        fullname = html.escape(callback.from_user.full_name)
         
         today_str = datetime.now().strftime("%Y-%m-%d")
         
@@ -287,10 +289,13 @@ async def show_client_cabinet(callback: CallbackQuery, state: FSMContext):
                 
                 status_desc = "🟢 Подтверждена" if app.status == "approved" else "🟡 В ожидании подтверждения мастера"
                 
+                safe_hair = html.escape(app.hair_length) if app.hair_length else 'Не указано'
+                safe_desired = html.escape(app.desired_result) if app.desired_result else 'Без комментариев'
+                
                 item_desc = (
                     f"📅 <b>{date_formatted} в {app.slot}</b>\n"
                     f"   • Статус: <i>{status_desc}</i>\n"
-                    f"   • Пожелания: <i>{app.hair_length or 'Не указано'} / {app.desired_result or 'Без комментариев'}</i>\n"
+                    f"   • Пожелания: <i>{safe_hair} / {safe_desired}</i>\n"
                     f"   • Мастер: Анфиса"
                 )
                 upcoming_lines.append(item_desc)
@@ -401,8 +406,8 @@ async def process_client_confirm_cancel(callback: CallbackQuery, bot: Bot):
         app_id = int(callback.data.split(":")[1])
         
         tg_id = callback.from_user.id
-        fullname = callback.from_user.full_name
-        username = callback.from_user.username
+        fullname = html.escape(callback.from_user.full_name)
+        username = html.escape(callback.from_user.username) if callback.from_user.username else None
         
         with get_db() as session:
             app = session.query(Appointment).filter(Appointment.id == app_id).first()
