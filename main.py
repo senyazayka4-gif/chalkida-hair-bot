@@ -114,6 +114,17 @@ def run_network_diagnostics():
         except Exception as e:
             logger.error(f"❌ HTTP FAILED for {url}: {e}")
             
+    # Test direct socket connection to Telegram IPv4 on port 443
+    for ip, name in [("149.154.166.110", "Telegram"), ("78.47.169.47", "tg.i-c-a.su"), ("142.251.163.113", "Google")]:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(3)
+            s.connect((ip, 443))
+            logger.info(f"🟢 TCP CONNECT SUCCESS to {name} ({ip}:443)")
+            s.close()
+        except Exception as e:
+            logger.error(f"❌ TCP CONNECT FAILED to {name} ({ip}:443): {e}")
+
     # Test proxy request to Telegram getMe
     try:
         url = f"https://tg.i-c-a.su/bot{config.BOT_TOKEN}/getMe"
