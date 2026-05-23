@@ -53,11 +53,17 @@ KEYWORDS_UA = [
 ]
 
 # Monitored Telegram channels/groups by default (Chalkida / Evia local groups)
+# Monitored Telegram channels/groups by default (premium expat channels)
 DEFAULT_MONITORED_CHANNELS = [
-    "halkida_news",
-    "chalkida_classifieds",
-    "evia_group",
-    "chalkida_chat"
+    "NASHI_v_GRETSII",
+    "Residence_permit_gr",
+    "greece4ukraine",
+    "greece_russia",
+    "greeceforukraine",
+    "helpukrainegr",
+    "russians_in_greece",
+    "ua24gr",
+    "ukrainianshelp"
 ]
 
 # Hairdresser Portfolio (Services & Styles)
