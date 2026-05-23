@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: chalkida-hair-bot
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: ADMIN_IDS
+        value: "803113966"
+      - key: GEMINI_API_KEY
+        value: "AIzaSyC2KkxvmrBKkCWSMXZ2r_MAXYyIh4tySnM"
+      - key: DB_URL
+        value: "postgresql://postgres.kjhlrztasttqdlplyyzl:%D0%A311%D1%84%D0%B2%D1%84475847@aws-1-eu-north-1.pooler.supabase.com:5432/postgres"
