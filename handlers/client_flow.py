@@ -250,202 +250,220 @@ async def show_client_cabinet(callback: CallbackQuery, state: FSMContext):
     Renders client dashboard showing upcoming bookings and past visits history.
     Allows cancelling upcoming active appointments.
     """
-    await callback.answer()
-    await state.clear()  # Clear state just in case FSM is active
-    
-    tg_id = callback.from_user.id
-    fullname = callback.from_user.full_name
-    
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    
-    with get_db() as session:
-        # Active upcoming appointments (approved or pending)
-        upcoming = session.query(Appointment).filter(
-            Appointment.user_id == tg_id,
-            Appointment.date >= today_str,
-            Appointment.status.in_(["approved", "pending"])
-        ).order_by(Appointment.date, Appointment.slot).all()
+    try:
+        await callback.answer()
+        await state.clear()  # Clear state just in case FSM is active
         
-        # Past or cancelled/completed appointments
-        past = session.query(Appointment).filter(
-            Appointment.user_id == tg_id,
-            (Appointment.date < today_str) | (Appointment.status.in_(["completed", "cancelled"]))
-        ).order_by(Appointment.date.desc(), Appointment.slot.desc()).limit(5).all()
+        tg_id = callback.from_user.id
+        fullname = callback.from_user.full_name
+        
+        today_str = datetime.now().strftime("%Y-%m-%d")
+        
+        with get_db() as session:
+            # Active upcoming appointments (approved or pending)
+            upcoming = session.query(Appointment).filter(
+                Appointment.user_id == tg_id,
+                Appointment.date >= today_str,
+                Appointment.status.in_(["approved", "pending"])
+            ).order_by(Appointment.date, Appointment.slot).all()
+            
+            # Past or cancelled/completed appointments
+            past = session.query(Appointment).filter(
+                Appointment.user_id == tg_id,
+                (Appointment.date < today_str) | (Appointment.status.in_(["completed", "cancelled"]))
+            ).order_by(Appointment.date.desc(), Appointment.slot.desc()).limit(5).all()
 
-    # Build active upcoming bookings section
-    upcoming_lines = []
-    builder = InlineKeyboardBuilder()
-    
-    if not upcoming:
-        upcoming_text = "• <b>У вас нет активных предстоящих записей.</b>\n<i>Записаться на стрижку можно в главном меню с помощью удобного онлайн-календаря!</i>"
-    else:
-        upcoming_text = "<b>Ближайшие запланированные визиты:</b>\n"
-        for app in upcoming:
-            parsed_dt = datetime.strptime(app.date, "%Y-%m-%d")
-            date_formatted = parsed_dt.strftime("%d.%m.%Y")
-            
-            status_desc = "🟢 Подтверждена" if app.status == "approved" else "🟡 В ожидании подтверждения мастера"
-            
-            item_desc = (
-                f"📅 <b>{date_formatted} в {app.slot}</b>\n"
-                f"   • Статус: <i>{status_desc}</i>\n"
-                f"   • Пожелания: <i>{app.hair_length or 'Не указано'} / {app.desired_result or 'Без комментариев'}</i>\n"
-                f"   • Мастер: Анфиса"
-            )
-            upcoming_lines.append(item_desc)
-            
-            # Add an Inline button to cancel this specific appointment
-            cancel_btn_text = f"❌ Отменить {parsed_dt.strftime('%d.%m')} {app.slot}"
-            builder.row(InlineKeyboardButton(text=cancel_btn_text, callback_data=f"client_cancel_app:{app.id}"))
-            
-        upcoming_text += "\n\n".join(upcoming_lines)
-
-    # Build past visits history section
-    if not past:
-        past_text = "• <b>История посещений пуста.</b>"
-    else:
-        past_lines = []
-        for app in past:
-            parsed_dt = datetime.strptime(app.date, "%Y-%m-%d")
-            date_formatted = parsed_dt.strftime("%d.%m.%Y")
-            
-            if app.status == "cancelled":
-                status_desc = "❌ Отменена"
-            elif app.status == "completed":
-                status_desc = "✅ Завершена"
-            else:
-                status_desc = "🔘 Прошедшая"
+        # Build active upcoming bookings section
+        upcoming_lines = []
+        builder = InlineKeyboardBuilder()
+        
+        if not upcoming:
+            upcoming_text = "• <b>У вас нет активных предстоящих записей.</b>\n<i>Записаться на стрижку можно в главном меню с помощью удобного онлайн-календаря!</i>"
+        else:
+            upcoming_text = "<b>Ближайшие запланированные визиты:</b>\n"
+            for app in upcoming:
+                parsed_dt = datetime.strptime(app.date, "%Y-%m-%d")
+                date_formatted = parsed_dt.strftime("%d.%m.%Y")
                 
-            past_lines.append(f"• <b>{date_formatted} в {app.slot}</b> — {status_desc}")
-        past_text = "\n".join(past_lines)
+                status_desc = "🟢 Подтверждена" if app.status == "approved" else "🟡 В ожидании подтверждения мастера"
+                
+                item_desc = (
+                    f"📅 <b>{date_formatted} в {app.slot}</b>\n"
+                    f"   • Статус: <i>{status_desc}</i>\n"
+                    f"   • Пожелания: <i>{app.hair_length or 'Не указано'} / {app.desired_result or 'Без комментариев'}</i>\n"
+                    f"   • Мастер: Анфиса"
+                )
+                upcoming_lines.append(item_desc)
+                
+                # Add an Inline button to cancel this specific appointment
+                cancel_btn_text = f"❌ Отменить {parsed_dt.strftime('%d.%m')} {app.slot}"
+                builder.row(InlineKeyboardButton(text=cancel_btn_text, callback_data=f"client_cancel_app:{app.id}"))
+                
+            upcoming_text += "\n\n".join(upcoming_lines)
 
-    cabinet_html = (
-        f"👤 <b>ЛИЧНЫЙ КАБИНЕТ КЛИЕНТА</b>\n\n"
-        f"Здравствуйте, <b>{fullname}</b>! Рады видеть вас.\n\n"
-        f"────────────────────\n"
-        f"{upcoming_text}\n"
-        f"────────────────────\n\n"
-        f"📜 <b>ИСТОРИЯ ВАШИХ ВИЗИТОВ (до 5 последних):</b>\n"
-        f"{past_text}\n\n"
-        f"✨ <i>Если вам нужно отменить запись, нажмите на соответствующую кнопку ниже. "
-        f"Запись будет сразу же удалена, освобождая время для других.</i>"
-    )
-    
-    builder.row(InlineKeyboardButton(text="🏠 На главную", callback_data="back_to_menu"))
-    
-    await callback.message.edit_text(
-        cabinet_html,
-        parse_mode="HTML",
-        reply_markup=builder.as_markup()
-    )
+        # Build past visits history section
+        if not past:
+            past_text = "• <b>История посещений пуста.</b>"
+        else:
+            past_lines = []
+            for app in past:
+                parsed_dt = datetime.strptime(app.date, "%Y-%m-%d")
+                date_formatted = parsed_dt.strftime("%d.%m.%Y")
+                
+                if app.status == "cancelled":
+                    status_desc = "❌ Отменена"
+                elif app.status == "completed":
+                    status_desc = "✅ Завершена"
+                else:
+                    status_desc = "🔘 Прошедшая"
+                    
+                past_lines.append(f"• <b>{date_formatted} в {app.slot}</b> — {status_desc}")
+            past_text = "\n".join(past_lines)
+
+        cabinet_html = (
+            f"👤 <b>ЛИЧНЫЙ КАБИНЕТ КЛИЕНТА</b>\n\n"
+            f"Здравствуйте, <b>{fullname}</b>! Рады видеть вас.\n\n"
+            f"────────────────────\n"
+            f"{upcoming_text}\n"
+            f"────────────────────\n\n"
+            f"📜 <b>ИСТОРИЯ ВАШИХ ВИЗИТОВ (до 5 последних):</b>\n"
+            f"{past_text}\n\n"
+            f"✨ <i>Если вам нужно отменить запись, нажмите на соответствующую кнопку ниже. "
+            f"Запись будет сразу же удалена, освобождая время для других.</i>"
+        )
+        
+        builder.row(InlineKeyboardButton(text="🏠 На главную", callback_data="back_to_menu"))
+        
+        await callback.message.edit_text(
+            cabinet_html,
+            parse_mode="HTML",
+            reply_markup=builder.as_markup()
+        )
+    except Exception as e:
+        print(f"🔴 ERROR in show_client_cabinet: {e}")
+        await callback.message.answer(
+            "⚠️ <b>Произошла ошибка при открытии Личного кабинета.</b>\nПожалуйста, обратитесь к администратору студии.",
+            parse_mode="HTML"
+        )
 
 @router.callback_query(F.data.startswith("client_cancel_app:"))
 async def process_client_cancel_prompt(callback: CallbackQuery):
     """
     Shows a double-confirmation prompt before cancelling an appointment.
     """
-    await callback.answer()
-    app_id = int(callback.data.split(":")[1])
-    
-    with get_db() as session:
-        app = session.query(Appointment).filter(Appointment.id == app_id).first()
-        if not app:
-            await callback.message.edit_text(
-                "⚠️ <b>Ошибка: Запись не найдена.</b>",
-                parse_mode="HTML",
-                reply_markup=InlineKeyboardBuilder().row(InlineKeyboardButton(text="👤 В личный кабинет", callback_data="client_cabinet")).as_markup()
-            )
-            return
-            
-        parsed_dt = datetime.strptime(app.date, "%Y-%m-%d")
-        date_formatted = parsed_dt.strftime("%d.%m.%Y")
-        slot_str = app.slot
+    try:
+        await callback.answer()
+        app_id = int(callback.data.split(":")[1])
+        
+        with get_db() as session:
+            app = session.query(Appointment).filter(Appointment.id == app_id).first()
+            if not app:
+                await callback.message.edit_text(
+                    "⚠️ <b>Ошибка: Запись не найдена.</b>",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardBuilder().row(InlineKeyboardButton(text="👤 В личный кабинет", callback_data="client_cabinet")).as_markup()
+                )
+                return
+                
+            parsed_dt = datetime.strptime(app.date, "%Y-%m-%d")
+            date_formatted = parsed_dt.strftime("%d.%m.%Y")
+            slot_str = app.slot
 
-    confirm_html = (
-        f"❓ <b>ПОДТВЕРЖДЕНИЕ ОТМЕНЫ ЗАПИСИ</b>\n\n"
-        f"Вы действительно хотите отменить вашу запись на <b>{date_formatted} в {slot_str}</b>?\n\n"
-        f"⚠️ <i>Внимание: отмена действия необратима. Это время сразу же освободится в календаре, "
-        f"и его сможет забронировать любой другой желающий!</i>"
-    )
-    
-    builder = InlineKeyboardBuilder()
-    builder.row(
-        InlineKeyboardButton(text="✅ Да, отменить запись", callback_data=f"client_confirm_cancel:{app_id}"),
-        InlineKeyboardButton(text="◀️ Нет, назад", callback_data="client_cabinet")
-    )
-    
-    await callback.message.edit_text(
-        confirm_html,
-        parse_mode="HTML",
-        reply_markup=builder.as_markup()
-    )
+        confirm_html = (
+            f"❓ <b>ПОДТВЕРЖДЕНИЕ ОТМЕНЫ ЗАПИСИ</b>\n\n"
+            f"Вы действительно хотите отменить вашу запись на <b>{date_formatted} в {slot_str}</b>?\n\n"
+            f"⚠️ <i>Внимание: отмена действия необратима. Это время сразу же освободится в календаре, "
+            f"и его сможет забронировать любой другой желающий!</i>"
+        )
+        
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(text="✅ Да, отменить запись", callback_data=f"client_confirm_cancel:{app_id}"),
+            InlineKeyboardButton(text="◀️ Нет, назад", callback_data="client_cabinet")
+        )
+        
+        await callback.message.edit_text(
+            confirm_html,
+            parse_mode="HTML",
+            reply_markup=builder.as_markup()
+        )
+    except Exception as e:
+        print(f"🔴 ERROR in process_client_cancel_prompt: {e}")
+        await callback.message.answer("⚠️ Ошибка при подготовке отмены записи. Пожалуйста, попробуйте позже.")
 
 @router.callback_query(F.data.startswith("client_confirm_cancel:"))
 async def process_client_confirm_cancel(callback: CallbackQuery, bot: Bot):
     """
     Performs the cancellation in DB, alerts client and all admins.
     """
-    await callback.answer("Запись отменена.")
-    app_id = int(callback.data.split(":")[1])
-    
-    tg_id = callback.from_user.id
-    fullname = callback.from_user.full_name
-    username = callback.from_user.username
-    
-    with get_db() as session:
-        app = session.query(Appointment).filter(Appointment.id == app_id).first()
-        if not app:
-            await callback.message.edit_text(
-                "⚠️ <b>Ошибка: Запись не найдена или уже была отменена.</b>",
-                parse_mode="HTML",
-                reply_markup=InlineKeyboardBuilder().row(InlineKeyboardButton(text="👤 В кабинет", callback_data="client_cabinet")).as_markup()
-            )
-            return
-            
-        if app.status == "cancelled":
-            await callback.message.edit_text(
-                "🟢 <b>Эта запись уже была отменена ранее.</b>",
-                parse_mode="HTML",
-                reply_markup=InlineKeyboardBuilder().row(InlineKeyboardButton(text="👤 В кабинет", callback_data="client_cabinet")).as_markup()
-            )
-            return
-            
-        app.status = "cancelled"
-        date_formatted = datetime.strptime(app.date, "%Y-%m-%d").strftime("%d.%m.%Y")
-        slot_str = app.slot
-        session.commit()
+    try:
+        await callback.answer("Запись отменена.")
+        app_id = int(callback.data.split(":")[1])
         
-    # 1. Edit client's message with a confirmation
-    success_html = (
-        f"🗑️ <b>Запись успешно отменена</b>\n\n"
-        f"Ваша запись на <b>{date_formatted} в {slot_str}</b> отменена.\n"
-        f"Время освобождено. Ждем вас в следующий раз! ✨"
-    )
-    
-    builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="🏠 Главное меню", callback_data="back_to_menu"))
-    
-    await callback.message.edit_text(
-        success_html,
-        parse_mode="HTML",
-        reply_markup=builder.as_markup()
-    )
-    
-    # 2. Notify all Admins in HTML to avoid Markdown underscore issues
-    admin_alert_html = (
-        f"🚨 <b>КЛИЕНТ ОТМЕНИЛ ЗАПИСЬ #{app_id}</b>\n\n"
-        f"👤 <b>Клиент:</b> {fullname} (@{username or 'нет'})\n"
-        f"🆔 <b>ID пользователя:</b> <code>{tg_id}</code>\n"
-        f"📅 <b>Дата/время:</b> {date_formatted} в {slot_str}\n\n"
-        f"❌ Временной слот автоматически освобожден и снова доступен для онлайн-записи других клиентов!"
-    )
-    
-    for admin_id in config.ADMIN_IDS:
-        try:
-            await bot.send_message(
-                chat_id=admin_id,
-                text=admin_alert_html,
-                parse_mode="HTML"
-            )
-        except Exception as e:
-            print(f"Failed to alert admin {admin_id} about cancellation: {e}")
+        tg_id = callback.from_user.id
+        fullname = callback.from_user.full_name
+        username = callback.from_user.username
+        
+        with get_db() as session:
+            app = session.query(Appointment).filter(Appointment.id == app_id).first()
+            if not app:
+                await callback.message.edit_text(
+                    "⚠️ <b>Ошибка: Запись не найдена или уже была отменена.</b>",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardBuilder().row(InlineKeyboardButton(text="👤 В кабинет", callback_data="client_cabinet")).as_markup()
+                )
+                return
+                
+            if app.status == "cancelled":
+                await callback.message.edit_text(
+                    "🟢 <b>Эта запись уже была отменена ранее.</b>",
+                    parse_mode="HTML",
+                    reply_markup=InlineKeyboardBuilder().row(InlineKeyboardButton(text="👤 В кабинет", callback_data="client_cabinet")).as_markup()
+                )
+                return
+                
+            app.status = "cancelled"
+            date_formatted = datetime.strptime(app.date, "%Y-%m-%d").strftime("%d.%m.%Y")
+            slot_str = app.slot
+            session.commit()
+            
+        # 1. Edit client's message with a confirmation
+        success_html = (
+            f"🗑️ <b>Запись успешно отменена</b>\n\n"
+            f"Ваша запись на <b>{date_formatted} в {slot_str}</b> отменена.\n"
+            f"Время освобождено. Ждем вас в следующий раз! ✨"
+        )
+        
+        builder = InlineKeyboardBuilder()
+        builder.row(
+            InlineKeyboardButton(text="◀️ Вернуться к списку", callback_data="client_cabinet"),
+            InlineKeyboardButton(text="🏠 Главное меню", callback_data="back_to_menu")
+        )
+        
+        await callback.message.edit_text(
+            success_html,
+            parse_mode="HTML",
+            reply_markup=builder.as_markup()
+        )
+        
+        # 2. Notify all Admins in HTML to avoid Markdown underscore issues
+        admin_alert_html = (
+            f"🚨 <b>КЛИЕНТ ОТМЕНИЛ ЗАПИСЬ #{app_id}</b>\n\n"
+            f"👤 <b>Клиент:</b> {fullname} (@{username or 'нет'})\n"
+            f"🆔 <b>ID пользователя:</b> <code>{tg_id}</code>\n"
+            f"📅 <b>Дата/время:</b> {date_formatted} в {slot_str}\n\n"
+            f"❌ Временной слот автоматически освобожден и снова доступен для онлайн-записи других клиентов!"
+        )
+        
+        for admin_id in config.ADMIN_IDS:
+            try:
+                await bot.send_message(
+                    chat_id=admin_id,
+                    text=admin_alert_html,
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                print(f"Failed to alert admin {admin_id} about cancellation: {e}")
+    except Exception as e:
+        print(f"🔴 ERROR in process_client_confirm_cancel: {e}")
+        await callback.message.answer("⚠️ Ошибка при выполнении отмены записи. Пожалуйста, обратитесь к мастеру.")
