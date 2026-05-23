@@ -83,7 +83,30 @@ def start_dummy_web_server():
     threading.Thread(target=run_server, daemon=True).start()
 
 
+def run_network_diagnostics():
+    import socket
+    import urllib.request
+    logger.info("=== STARTING CLOUD NETWORK DIAGNOSTICS ===")
+    for host in ["api.telegram.org", "google.com", "huggingface.co"]:
+        try:
+            ips = socket.getaddrinfo(host, 443)
+            logger.info(f"🔍 DNS: {host} resolved to: {[ip[4][0] for ip in ips]}")
+        except Exception as e:
+            logger.error(f"❌ DNS FAILED for {host}: {e}")
+
+    for url in ["https://google.com", "https://api.telegram.org"]:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                logger.info(f"🟢 HTTP SUCCESS: {url} returned status {response.status}")
+        except Exception as e:
+            logger.error(f"❌ HTTP FAILED for {url}: {e}")
+
+
 async def main():
+    # Run network diagnostics first
+    run_network_diagnostics()
+
     # Start dummy web server for HF Spaces
     start_dummy_web_server()
     
