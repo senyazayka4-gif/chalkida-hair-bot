@@ -183,7 +183,12 @@ async def run_telethon_parser(bot: Bot):
                     
                     await send_lead_card_to_admins(bot, lead_data)
                     
-        await client.start()
+        await client.connect()
+        if not await client.is_user_authorized():
+            print("🔴 Telethon session is NOT authorized on this cloud server (IP change or session expired). Disabling parser to prevent event loop freeze.")
+            await client.disconnect()
+            return
+            
         print("🟢 Telethon OSINT parser connected and actively listening to monitored spaces!")
         await client.run_until_disconnected()
         
