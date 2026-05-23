@@ -1,52 +1,47 @@
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from aiogram.types import Message, CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from database.connection import get_db
-from database.models import User
 import services.calendar_api as calendar_api
-import services.trichology_advisor as trichology_advisor
 import config
-
 
 router = Router(name="quiz")
 
-class HairQuiz(StatesGroup):
-    length_and_type = State()
-    desired_result = State()
-    photo = State()
-
-def get_hair_specs_keyboard() -> InlineKeyboardMarkup:
+def get_style_selection_keyboard() -> InlineKeyboardMarkup:
+    """
+    Generates an inline keyboard listing the premium hairstyles from config.PORTFOLIO_ITEMS
+    plus a custom booking option.
+    """
     builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="👩 Короткие / Тонкие (Short/Thin)", callback_data="hair:short_thin"))
-    builder.row(InlineKeyboardButton(text="👩 Средние / Нормальные (Medium/Normal)", callback_data="hair:medium_normal"))
-    builder.row(InlineKeyboardButton(text="👩 Длинные / Густые (Long/Thick)", callback_data="hair:long_thick"))
-    builder.row(InlineKeyboardButton(text="👩 Кудрявые / Волнистые (Curly/Wavy)", callback_data="hair:curly_wavy"))
+    
+    # Loop over current configured portfolio items
+    for item in config.PORTFOLIO_ITEMS:
+        builder.row(InlineKeyboardButton(text=item["title"], callback_data=f"client_book_style:{item['id']}"))
+        
+    builder.row(InlineKeyboardButton(text="💇‍♀️ Другая стрижка / Свой вариант", callback_data="client_book_style:other"))
+    builder.row(InlineKeyboardButton(text="🏠 На главную", callback_data="back_to_menu"))
     return builder.as_markup()
 
 @router.callback_query(F.data == "client_book")
-async def start_quiz(callback: CallbackQuery, state: FSMContext):
+async def start_booking_flow(callback: CallbackQuery, state: FSMContext):
     """
-    Triggers the FSM pre-appointment quiz.
+    Triggered when clicking "Записаться онлайн" from main menu.
+    Asks the client to select their desired hairstyle.
     """
     await callback.answer()
     await state.clear()
     
-    await state.set_state(HairQuiz.length_and_type)
-    
-    quiz_welcome = (
-        "📋 *Анкета перед записью (Pre-Appointment Quiz)*\n\n"
-        "Для того чтобы процедура стрижки прошла максимально комфортно и дала идеальный результат, "
-        "пожалуйста, пройдите этот небольшой опрос для мастера.\n\n"
-        "👇 *Шаг 1: Выберите длину и тип ваших волос:*"
+    welcome_text = (
+        "💇‍♀️ *ВЫБОР СТРИЖКИ ДЛЯ ЗАПИСИ*\n\n"
+        "Пожалуйста, выберите прическу, которую вы хотите сделать:\n\n"
+        "ℹ️ _Посмотреть примеры работ и подробное описание можно в разделе «🖼️ Наше Портфолио и Цены» в главном меню._"
     )
     
     try:
         await callback.message.edit_text(
-            quiz_welcome,
+            welcome_text,
             parse_mode="Markdown",
-            reply_markup=get_hair_specs_keyboard()
+            reply_markup=get_style_selection_keyboard()
         )
     except Exception:
         try:
@@ -54,101 +49,67 @@ async def start_quiz(callback: CallbackQuery, state: FSMContext):
         except Exception:
             pass
         await callback.message.answer(
-            quiz_welcome,
+            welcome_text,
             parse_mode="Markdown",
-            reply_markup=get_hair_specs_keyboard()
+            reply_markup=get_style_selection_keyboard()
         )
 
-@router.callback_query(HairQuiz.length_and_type, F.data.startswith("hair:"))
-async def process_hair_specs(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data.startswith("client_book_style:"))
+async def process_style_booking(callback: CallbackQuery, state: FSMContext):
+    """
+    Triggered when a specific hairstyle is chosen from the menu or portfolio.
+    Presets FSM state data and instantly loads the calendar.
+    """
     await callback.answer()
-    hair_code = callback.data.split(":")[1]
+    style_id = callback.data.replace("client_book_style:", "")
     
-    # Store length and type
-    mapping = {
-        "short_thin": "Короткие / Тонкие",
-        "medium_normal": "Средние / Нормальные",
-        "long_thick": "Длинные / Густые",
-        "curly_wavy": "Кудрявые / Волнистые"
-    }
-    hair_specs = mapping.get(hair_code, "Не указано")
-    await state.update_data(hair_length_type=hair_specs)
-    
-    # Set default values for other history fields in FSM state
-    # to maintain full backward compatibility with the database structure
+    style_name = "Свой вариант"
+    # Find matching style title from config
+    for item in config.PORTFOLIO_ITEMS:
+        if item["id"] == style_id:
+            style_name = item["title"]
+            break
+            
+    if style_id == "other":
+        style_name = "Свой вариант / Другая стрижка"
+        
+    # Preset FSM context variables to maintain absolute backward compatibility with the database schema
     await state.update_data(
+        hair_length_type=style_name,
         history_henna="Нет",
         history_box_dye="Нет",
-        history_bleach="Нет"
+        history_bleach="Нет",
+        desired_result=f"Выбрана стрижка: {style_name}",
+        photo_path=None,
+        trichology_report=None
     )
     
-    await state.set_state(HairQuiz.desired_result)
-    await callback.message.edit_text(
-        "📋 *Анкета перед записью (Шаг 2 из 3)*\n\n"
-        "Опишите желаемый результат стрижки (например: 'освежить каре', 'подровнять кончики', 'сделать каскад'):\n\n"
-        "✏️ *Напишите текст сообщением в чат:*",
-        parse_mode="Markdown"
-    )
-
-@router.message(HairQuiz.desired_result)
-async def process_desired_result(message: Message, state: FSMContext):
-    await state.update_data(desired_result=message.text)
-    
-    await state.set_state(HairQuiz.photo)
-    
-    builder = InlineKeyboardBuilder()
-    builder.row(InlineKeyboardButton(text="⏭️ Пропустить фото (Skip)", callback_data="skip_photo"))
-    
-    await message.reply(
-        "📋 *Анкета перед записью (Шаг 3 из 3)*\n\n"
-        "Пожалуйста, пришлите **фото ваших волос** при хорошем освещении сзади (опционально).\n"
-        "Это поможет мастеру лучше подготовиться к вашей стрижке. ✨\n\n"
-        "👇 Отправьте фото сообщением или нажмите кнопку пропуска:",
-        parse_mode="Markdown",
-        reply_markup=builder.as_markup()
-    )
-
-@router.message(HairQuiz.photo, F.photo)
-async def process_photo(message: Message, state: FSMContext):
-    # Save the largest photo file id
-    photo_file_id = message.photo[-1].file_id
-    await state.update_data(photo_path=photo_file_id)
-    await state.update_data(trichology_report=None)
-    
-    # Send a friendly confirmation
-    await message.reply(
-        "📸 *Фото волос успешно добавлено к вашей заявке!*\n"
-        "Мастер обязательно изучит его перед вашей процедурой. ✨",
-        parse_mode="Markdown"
-    )
-    
-    # Show native calendar booking step
-    await finish_quiz_and_show_calendar(message, state)
-
-@router.callback_query(HairQuiz.photo, F.data == "skip_photo")
-async def process_skip_photo(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    await state.update_data(photo_path=None)
-    await finish_quiz_and_show_calendar(callback.message, state, is_callback=True)
-
-async def finish_quiz_and_show_calendar(message: Message, state: FSMContext, is_callback: bool = False):
-    """
-    Finishes FSM, saves quiz data in states and triggers calendar view.
-    """
     # Generate Calendar Keyboard for selection
     calendar_markup = calendar_api.generate_calendar_keyboard()
     
     instruction_text = (
-        "📋 *Анкета успешно заполнена!*\n\n"
-        "Спасибо, вся необходимая информация для мастера собрана.\n\n"
-        "📅 *Шаг 7: Выберите дату вашего визита на календаре ниже:*"
+        f"📋 *Выбранная услуга:* {style_name}\n\n"
+        f"📅 *Пожалуйста, выберите подходящую дату на календаре ниже:*"
     )
     
-    if is_callback:
-        await message.edit_text(instruction_text, parse_mode="Markdown", reply_markup=calendar_markup)
-    else:
-        await message.answer(instruction_text, parse_mode="Markdown", reply_markup=calendar_markup)
-        
-    # Set the FSM state to None so that the calendar handlers (which default to matching state=None)
-    # can trigger successfully. The saved quiz data in FSM memory remains fully preserved!
+    # Release FSM state block so that direct calendar handlers match successfully,
+    # while keeping the updated state data stored safely in memory.
     await state.set_state(None)
+    
+    try:
+        await callback.message.edit_text(
+            instruction_text,
+            parse_mode="Markdown",
+            reply_markup=calendar_markup
+        )
+    except Exception:
+        # If it fails (e.g. attempting to edit a photo message into text), delete and send fresh
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+        await callback.message.answer(
+            instruction_text,
+            parse_mode="Markdown",
+            reply_markup=calendar_markup
+        )

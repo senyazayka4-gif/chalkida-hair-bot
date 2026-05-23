@@ -35,7 +35,7 @@ async def show_portfolio(callback: CallbackQuery):
         )
         
         builder = InlineKeyboardBuilder()
-        builder.row(InlineKeyboardButton(text="📅 Записаться на эту услугу", callback_data="client_book"))
+        builder.row(InlineKeyboardButton(text="📅 Записаться на эту услугу", callback_data=f"client_book_style:{item['id']}"))
         
         try:
             await callback.message.answer_photo(
@@ -198,9 +198,8 @@ async def process_calendar_slot(callback: CallbackQuery, state: FSMContext, bot:
         f"👤 *Клиент:* {fullname} (@{username or 'нет'})\n"
         f"🆔 *ID:* `{tg_id}`\n"
         f"📆 *Дата:* {date_formatted} ({slot_str})\n\n"
-        f"📋 *Анкета клиента:*\n"
-        f"• *Тип/Длина:* {data.get('hair_length_type', 'Не указано')}\n"
-        f"• *Пожелания:* {data.get('desired_result', 'Без комментариев')}\n"
+        f"📋 *Детали записи:*\n"
+        f"• *Выбранная прическа:* {data.get('hair_length_type', 'Не указано')}\n"
     )
     
     admin_kb = InlineKeyboardBuilder()

@@ -323,9 +323,8 @@ async def admin_view_specific_appointment(callback: CallbackQuery):
             f"• <b>Имя:</b> {app.user.fullname or 'Не указано'}\n"
             f"• <b>Telegram:</b> @{app.user.username or 'нет'}\n"
             f"• <b>ID пользователя:</b> <code>{app.user_id}</code>\n\n"
-            f"📋 <b>АНКЕТА КЛИЕНТА:</b>\n"
-            f"• <b>Тип/длина волос:</b> {app.hair_length or 'Не указано'}\n"
-            f"• <b>Пожелания:</b> <i>{app.desired_result or 'Без комментариев'}</i>\n"
+            f"📋 <b>ДЕТАЛИ ЗАКАЗА:</b>\n"
+            f"• <b>Выбранная прическа:</b> {app.hair_length or 'Не указано'}\n"
         )
         
         builder = InlineKeyboardBuilder()
