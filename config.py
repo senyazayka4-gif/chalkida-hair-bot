@@ -1,0 +1,78 @@
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Build paths inside the project
+BASE_DIR = Path(__file__).resolve().parent
+ENV_PATH = BASE_DIR / ".env"
+
+# Load environment variables
+load_dotenv(dotenv_path=ENV_PATH)
+
+# Bot Configuration
+BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN")
+
+# Admin IDs (list of telegram IDs of managers who approve appointments and receive OSINT leads)
+admin_ids_str = os.getenv("ADMIN_IDS", "")
+ADMIN_IDS = [int(x.strip()) for x in admin_ids_str.split(",") if x.strip().isdigit()]
+
+# Gemini AI Key for fast lead answers
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+
+# Telethon API details (needed for local background chat parsing)
+TELETHON_API_ID = os.getenv("TELETHON_API_ID", "")
+if TELETHON_API_ID.isdigit():
+    TELETHON_API_ID = int(TELETHON_API_ID)
+else:
+    TELETHON_API_ID = None
+
+TELETHON_API_HASH = os.getenv("TELETHON_API_HASH", "")
+
+# Database Config
+DB_URL = os.getenv("DB_URL", f"sqlite:///{BASE_DIR}/database/chalkida_hair.db")
+
+# OSINT Keywords for Client Hunting (using robust substring matching)
+KEYWORDS_GR = [
+    "κομμωτήριο", "κούρεμα", "χαλκίδα", "εύβοια", "κομμώτρια", 
+    "χτένισμα", "σαλόνι ομορφιάς", "μαλλιά", "κομμωτής", "κoμμωτήριο"
+]
+
+KEYWORDS_EN = [
+    "hairdresser", "haircut", "chalkida", "evia", "hair", 
+    "salon", "stylist", "coiffeur"
+]
+
+KEYWORDS_RU = [
+    "парикмахер", "стриж", "салон красоты", 
+    "прическ", "укладк", "подстричь", "волос"
+]
+
+KEYWORDS_UA = [
+    "перукар", "стриж", "салон краси", 
+    "зачіск", "укладк", "підстриг", "волос"
+]
+
+# Monitored Telegram channels/groups by default (Chalkida / Evia local groups)
+DEFAULT_MONITORED_CHANNELS = [
+    "halkida_news",
+    "chalkida_classifieds",
+    "evia_group",
+    "chalkida_chat"
+]
+
+# Hairdresser Portfolio (Services & Styles)
+PORTFOLIO_ITEMS = [
+    {
+        "id": "style_1",
+        "title": "💇‍♀️ Стрижки, не требующие укладки",
+        "description": "Практичные, точные женские и мужские стрижки, которые отлично держат форму и прекрасно выглядят сами по себе даже после мытья головы.",
+        "duration": "1 час",
+        "price": "15-20€",
+        "photo": "https://images.unsplash.com/photo-1605497746444-ac9da58d440f?q=80&w=600&auto=format&fit=crop"
+    }
+]
+
+# Telegram Mini App Configuration
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https://anfisa-hair-artistry.surge.sh/booking.html")
+
+

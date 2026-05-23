@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+database/*.db
+database/chalkida_hair.db
+*.session
+*.session-journal
+.idea/
+.vscode/
+venv/
+env/
