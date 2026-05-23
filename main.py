@@ -116,8 +116,14 @@ async def main():
         print("\n🛑 ВНИМАНИЕ: Пожалуйста, откройте файл .env и впишите ваш BOT_TOKEN от @BotFather перед запуском!\n")
         sys.exit(1)
         
-    # Initialize Bot and Dispatcher
-    bot = Bot(token=config.BOT_TOKEN)
+    import socket
+    from aiogram.client.session.aiohttp import AiohttpSession
+    from aiohttp import TCPConnector
+
+    # Force strictly IPv4 connection to bypass unreachable IPv6 addresses in cloud environment
+    connector = TCPConnector(family=socket.AF_INET)
+    session = AiohttpSession(connector=connector)
+    bot = Bot(token=config.BOT_TOKEN, session=session)
     
     # Using memory storage for FSM states
     storage = MemoryStorage()
