@@ -11,6 +11,7 @@ load_dotenv(dotenv_path=ENV_PATH)
 
 # Bot Configuration
 BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_TELEGRAM_BOT_TOKEN")
+TELEGRAM_API_SERVER = os.getenv("TELEGRAM_API_SERVER", "")
 
 # Admin IDs (list of telegram IDs of managers who approve appointments and receive OSINT leads)
 admin_ids_str = os.getenv("ADMIN_IDS", "")

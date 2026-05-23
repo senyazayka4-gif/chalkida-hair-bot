@@ -97,8 +97,18 @@ def start_dummy_web_server():
 def run_network_diagnostics():
     import socket
     import urllib.request
+    from urllib.parse import urlparse
     logger.info("=== STARTING CLOUD NETWORK DIAGNOSTICS ===")
+    
     hosts = ["api.telegram.org", "google.com", "huggingface.co"]
+    if config.TELEGRAM_API_SERVER:
+        try:
+            parsed = urlparse(config.TELEGRAM_API_SERVER)
+            if parsed.netloc:
+                hosts.append(parsed.netloc)
+        except Exception:
+            pass
+
     for host in hosts:
         try:
             ips = socket.getaddrinfo(host, 443)
@@ -106,7 +116,11 @@ def run_network_diagnostics():
         except Exception as e:
             logger.error(f"❌ DNS FAILED for {host}: {e}")
 
-    for url in ["https://google.com", "https://api.telegram.org"]:
+    urls = ["https://google.com", "https://api.telegram.org"]
+    if config.TELEGRAM_API_SERVER:
+        urls.append(config.TELEGRAM_API_SERVER)
+
+    for url in urls:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=5) as response:
@@ -130,9 +144,16 @@ async def main():
         
     import socket
     from aiogram.client.session.aiohttp import AiohttpSession
+    from aiogram.client.telegram import TelegramAPIServer
 
     # Force strictly IPv4 connection to bypass unreachable IPv6 addresses in cloud environment
-    session = AiohttpSession()
+    if config.TELEGRAM_API_SERVER:
+        custom_server = TelegramAPIServer.from_base(config.TELEGRAM_API_SERVER)
+        session = AiohttpSession(api=custom_server)
+        logger.info(f"Using custom Telegram API server (proxy): {config.TELEGRAM_API_SERVER}")
+    else:
+        session = AiohttpSession()
+        
     session._connector_init["family"] = socket.AF_INET
     bot = Bot(token=config.BOT_TOKEN, session=session)
     
