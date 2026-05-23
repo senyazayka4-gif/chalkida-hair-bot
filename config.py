@@ -94,12 +94,12 @@ PORTFOLIO_ITEMS = [
         "photo": "https://raw.githubusercontent.com/senyazayka4-gif/chalkida-hair-bot/main/assets/pixie_haircut.png"
     },
     {
-        "id": "style_wavy",
-        "title": "💇‍♀️ Волнистый Шегги (Wavy Shag Cut)",
-        "description": "Игривая, естественная стрижка для вьющихся и волнистых волос, подчеркивающая природную текстуру и завитки.",
+        "id": "style_long_bob",
+        "title": "💇‍♀️ Удлиненное Каре (Long Bob / Lob)",
+        "description": "Элегантное удлиненное каре, плавно спускающееся к плечам. Идеально сбалансированная стрижка, которая прекрасно вытягивает силуэт и выглядит роскошно даже без укладки.",
         "duration": "1 час",
         "price": "15-20€",
-        "photo": "https://raw.githubusercontent.com/senyazayka4-gif/chalkida-hair-bot/main/assets/wavy_haircut.png"
+        "photo": "https://raw.githubusercontent.com/senyazayka4-gif/chalkida-hair-bot/main/assets/long_bob_haircut.png"
     },
     {
         "id": "style_straight",

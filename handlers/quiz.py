@@ -42,11 +42,22 @@ async def start_quiz(callback: CallbackQuery, state: FSMContext):
         "👇 *Шаг 1: Выберите длину и тип ваших волос:*"
     )
     
-    await callback.message.edit_text(
-        quiz_welcome,
-        parse_mode="Markdown",
-        reply_markup=get_hair_specs_keyboard()
-    )
+    try:
+        await callback.message.edit_text(
+            quiz_welcome,
+            parse_mode="Markdown",
+            reply_markup=get_hair_specs_keyboard()
+        )
+    except Exception:
+        try:
+            await callback.message.delete()
+        except Exception:
+            pass
+        await callback.message.answer(
+            quiz_welcome,
+            parse_mode="Markdown",
+            reply_markup=get_hair_specs_keyboard()
+        )
 
 @router.callback_query(HairQuiz.length_and_type, F.data.startswith("hair:"))
 async def process_hair_specs(callback: CallbackQuery, state: FSMContext):
