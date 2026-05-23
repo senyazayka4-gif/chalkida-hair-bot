@@ -87,14 +87,26 @@ def run_network_diagnostics():
     import socket
     import urllib.request
     logger.info("=== STARTING CLOUD NETWORK DIAGNOSTICS ===")
-    for host in ["api.telegram.org", "google.com", "huggingface.co"]:
+    hosts = [
+        "api.telegram.org", "google.com", "huggingface.co", 
+        "api.telegram-proxy.org", "tg.i-c-a.su", "api.telegram.org.eu.org", "botapi.turing.sh"
+    ]
+    for host in hosts:
         try:
             ips = socket.getaddrinfo(host, 443)
             logger.info(f"🔍 DNS: {host} resolved to: {[ip[4][0] for ip in ips]}")
         except Exception as e:
             logger.error(f"❌ DNS FAILED for {host}: {e}")
 
-    for url in ["https://google.com", "https://api.telegram.org"]:
+    urls = [
+        "https://google.com", 
+        "https://api.telegram.org",
+        "https://api.telegram-proxy.org",
+        "https://tg.i-c-a.su",
+        "https://api.telegram.org.eu.org",
+        "https://botapi.turing.sh"
+    ]
+    for url in urls:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=5) as response:
