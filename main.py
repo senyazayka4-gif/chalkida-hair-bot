@@ -5,6 +5,17 @@ if hasattr(sys.stdout, 'reconfigure'):
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
 
+# Force strictly IPv4 DNS resolution across the entire Python process
+# This is required because Hugging Face Spaces have dual-stack DNS resolution
+# but lack actual IPv6 outbound routing, causing connection hangs.
+import socket
+original_getaddrinfo = socket.getaddrinfo
+def ipv4_only_getaddrinfo(*args, **kwargs):
+    results = original_getaddrinfo(*args, **kwargs)
+    filtered = [r for r in results if r[0] == socket.AF_INET]
+    return filtered if filtered else results
+socket.getaddrinfo = ipv4_only_getaddrinfo
+
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
