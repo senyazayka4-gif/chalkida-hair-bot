@@ -202,9 +202,6 @@ async def process_calendar_slot(callback: CallbackQuery, state: FSMContext, bot:
         f"📆 *Дата:* {date_formatted} ({slot_str})\n\n"
         f"📋 *Анкета клиента:*\n"
         f"• *Тип/Длина:* {data.get('hair_length_type', 'Не указано')}\n"
-        f"• *Красилась хной:* {data.get('history_henna', 'Нет')}\n"
-        f"• *Бытовые краски:* {data.get('history_box_dye', 'Нет')}\n"
-        f"• *Осветление порошком:* {data.get('history_bleach', 'Нет')}\n"
         f"• *Пожелания:* {data.get('desired_result', 'Без комментариев')}\n"
     )
     

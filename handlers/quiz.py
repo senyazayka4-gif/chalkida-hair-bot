@@ -14,19 +14,8 @@ router = Router(name="quiz")
 
 class HairQuiz(StatesGroup):
     length_and_type = State()
-    history_henna = State()
-    history_box_dye = State()
-    history_bleach = State()
     desired_result = State()
     photo = State()
-
-def get_yes_no_keyboard() -> InlineKeyboardMarkup:
-    builder = InlineKeyboardBuilder()
-    builder.row(
-        InlineKeyboardButton(text="✅ Да (Yes)", callback_data="quiz_yes"),
-        InlineKeyboardButton(text="❌ Нет (No)", callback_data="quiz_no")
-    )
-    return builder.as_markup()
 
 def get_hair_specs_keyboard() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
@@ -48,8 +37,8 @@ async def start_quiz(callback: CallbackQuery, state: FSMContext):
     
     quiz_welcome = (
         "📋 *Анкета перед записью (Pre-Appointment Quiz)*\n\n"
-        "Для того чтобы процедура стрижки или окрашивания прошла "
-        "максимально безопасно и дала идеальный результат, пожалуйста, пройдите этот небольшой опрос для мастера.\n\n"
+        "Для того чтобы процедура стрижки прошла максимально комфортно и дала идеальный результат, "
+        "пожалуйста, пройдите этот небольшой опрос для мастера.\n\n"
         "👇 *Шаг 1: Выберите длину и тип ваших волос:*"
     )
     
@@ -74,53 +63,18 @@ async def process_hair_specs(callback: CallbackQuery, state: FSMContext):
     hair_specs = mapping.get(hair_code, "Не указано")
     await state.update_data(hair_length_type=hair_specs)
     
-    await state.set_state(HairQuiz.history_henna)
-    await callback.message.edit_text(
-        "📋 *Анкета перед записью (Шаг 2 из 6)*\n\n"
-        "Использовали ли вы *хну или басму* за последние 12 месяцев?\n"
-        "_(Это критично, так как хна может дать непредсказуемый зеленый оттенок при осветлении)_",
-        parse_mode="Markdown",
-        reply_markup=get_yes_no_keyboard()
+    # Set default values for other history fields in FSM state
+    # to maintain full backward compatibility with the database structure
+    await state.update_data(
+        history_henna="Нет",
+        history_box_dye="Нет",
+        history_bleach="Нет"
     )
-
-@router.callback_query(HairQuiz.history_henna, F.data.in_(["quiz_yes", "quiz_no"]))
-async def process_henna(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    answer = "Да" if callback.data == "quiz_yes" else "Нет"
-    await state.update_data(history_henna=answer)
-    
-    await state.set_state(HairQuiz.history_box_dye)
-    await callback.message.edit_text(
-        "📋 *Анкета перед записью (Шаг 3 из 6)*\n\n"
-        "Красили ли вы волосы *бытовыми красками из супермаркета* (коробками) за последние 12 месяцев?",
-        parse_mode="Markdown",
-        reply_markup=get_yes_no_keyboard()
-    )
-
-@router.callback_query(HairQuiz.history_box_dye, F.data.in_(["quiz_yes", "quiz_no"]))
-async def process_box_dye(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    answer = "Да" if callback.data == "quiz_yes" else "Нет"
-    await state.update_data(history_box_dye=answer)
-    
-    await state.set_state(HairQuiz.history_bleach)
-    await callback.message.edit_text(
-        "📋 *Анкета перед записью (Шаг 4 из 6)*\n\n"
-        "Было ли у вас *полное осветление или сильное обесцвечивание порошком* за последние 12 месяцев?",
-        parse_mode="Markdown",
-        reply_markup=get_yes_no_keyboard()
-    )
-
-@router.callback_query(HairQuiz.history_bleach, F.data.in_(["quiz_yes", "quiz_no"]))
-async def process_bleach(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    answer = "Да" if callback.data == "quiz_yes" else "Нет"
-    await state.update_data(history_bleach=answer)
     
     await state.set_state(HairQuiz.desired_result)
     await callback.message.edit_text(
-        "📋 *Анкета перед записью (Шаг 5 из 6)*\n\n"
-        "Опишите желаемый результат (например: 'хочу холодный блонд', 'освежить каре', 'подровнять кончики'):\n\n"
+        "📋 *Анкета перед записью (Шаг 2 из 3)*\n\n"
+        "Опишите желаемый результат стрижки (например: 'освежить каре', 'подровнять кончики', 'сделать каскад'):\n\n"
         "✏️ *Напишите текст сообщением в чат:*",
         parse_mode="Markdown"
     )
@@ -135,9 +89,9 @@ async def process_desired_result(message: Message, state: FSMContext):
     builder.row(InlineKeyboardButton(text="⏭️ Пропустить фото (Skip)", callback_data="skip_photo"))
     
     await message.reply(
-        "📋 *Анкета перед записью (Шаг 6 из 6)*\n\n"
+        "📋 *Анкета перед записью (Шаг 3 из 3)*\n\n"
         "Пожалуйста, пришлите **фото ваших волос** при хорошем освещении сзади (опционально).\n"
-        "Это поможет мастеру лучше подготовиться к вашему визиту. ✨\n\n"
+        "Это поможет мастеру лучше подготовиться к вашей стрижке. ✨\n\n"
         "👇 Отправьте фото сообщением или нажмите кнопку пропуска:",
         parse_mode="Markdown",
         reply_markup=builder.as_markup()

@@ -325,9 +325,6 @@ async def admin_view_specific_appointment(callback: CallbackQuery):
             f"• <b>ID пользователя:</b> <code>{app.user_id}</code>\n\n"
             f"📋 <b>АНКЕТА КЛИЕНТА:</b>\n"
             f"• <b>Тип/длина волос:</b> {app.hair_length or 'Не указано'}\n"
-            f"• <b>Хна/Басма (12 мес):</b> {app.history_henna or 'Нет'}\n"
-            f"• <b>Бытовые краски (12 мес):</b> {app.history_box_dye or 'Нет'}\n"
-            f"• <b>Осветление порошком (12 мес):</b> {app.history_bleach or 'Нет'}\n"
             f"• <b>Пожелания:</b> <i>{app.desired_result or 'Без комментариев'}</i>\n"
         )
         
