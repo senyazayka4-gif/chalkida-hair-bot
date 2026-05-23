@@ -134,8 +134,7 @@ async def run_telethon_parser(bot: Bot):
     to parse messages in public channels.
     """
     if not config.TELETHON_API_ID or not config.TELETHON_API_HASH:
-        print("⚠️ TELETHON_API_ID or TELETHON_API_HASH missing. Starting OSINT Parser in DEMO/Simulation Mode...")
-        await run_demo_simulation(bot)
+        print("⚠️ TELETHON_API_ID or TELETHON_API_HASH missing. OSINT Parser disabled.")
         return
         
     try:
@@ -189,11 +188,9 @@ async def run_telethon_parser(bot: Bot):
         await client.run_until_disconnected()
         
     except ImportError:
-        print("⚠️ Telethon package not fully installed or failed to import. Falling back to Demo Simulation...")
-        await run_demo_simulation(bot)
+        print("⚠️ Telethon package not fully installed or failed to import. OSINT Parser disabled.")
     except Exception as e:
-        print(f"🔴 Telethon parser error: {e}. Falling back to Demo Simulation...")
-        await run_demo_simulation(bot)
+        print(f"🔴 Telethon parser error: {e}. OSINT Parser disabled.")
 
 
 async def run_demo_simulation(bot: Bot):
