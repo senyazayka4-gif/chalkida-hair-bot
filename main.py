@@ -63,14 +63,11 @@ def start_dummy_web_server():
 
     class HealthCheckHandler(SimpleHTTPRequestHandler):
         def do_GET(self):
-            if self.path == "/":
-                self.send_response(200)
-                self.send_header("Content-type", "text/html; charset=utf-8")
-                self.end_headers()
-                self.wfile.write(b"<html><body><h1>Chalkida Hair Bot is Running!</h1></body></html>")
-            else:
-                self.send_response(404)
-                self.end_headers()
+            # Always return 200 OK for any paths/query strings to pass Hugging Face health checks
+            self.send_response(200)
+            self.send_header("Content-type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(b"<html><body><h1>Chalkida Hair Bot is Running!</h1></body></html>")
 
     def run_server():
         try:
@@ -108,10 +105,16 @@ async def main():
     # Register startup callback
     dp.startup.register(on_startup)
     
-    # Start polling
+    # Start polling with automatic reconnects
     logger.info("🤖 Zenith Chalkida Hair Bot starting long polling loop...")
     try:
-        await dp.start_polling(bot)
+        while True:
+            try:
+                await dp.start_polling(bot)
+                break
+            except Exception as e:
+                logger.error(f"🔴 Telegram connection error: {e}. Retrying in 10 seconds...")
+                await asyncio.sleep(10)
     finally:
         await bot.session.close()
 
