@@ -113,6 +113,16 @@ def run_network_diagnostics():
                 logger.info(f"🟢 HTTP SUCCESS: {url} returned status {response.status}")
         except Exception as e:
             logger.error(f"❌ HTTP FAILED for {url}: {e}")
+            
+    # Test proxy request to Telegram getMe
+    try:
+        url = f"https://tg.i-c-a.su/bot{config.BOT_TOKEN}/getMe"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=5) as response:
+            logger.info(f"🟢 PROXY TEST SUCCESS: {url} returned status {response.status}")
+            logger.info(f"🟢 PROXY DATA: {response.read().decode()[:200]}")
+    except Exception as e:
+        logger.error(f"❌ PROXY TEST FAILED: {e}")
 
 
 async def main():
