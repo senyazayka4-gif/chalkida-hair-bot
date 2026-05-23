@@ -20,10 +20,8 @@ async def show_portfolio(callback: CallbackQuery):
     await callback.answer()
     
     portfolio_intro = (
-        "🖼️ *Наше Портфолио и Услуги:*\n\n"
-        "Мы собрали для вас примеры наших работ в Халкиде. "
-        "Каждая услуга выполняется с использованием премиальной косметики L'Oréal & Olaplex.\n"
-        "👇 Посмотрите наши главные работы:"
+        "🖼️ *НАШЕ ПОРТФОЛИО СТРИЖЕК (вид сзади)*\n\n"
+        "👇 Выберите понравившийся стиль стрижки, чтобы записаться к мастеру:"
     )
     
     await callback.message.answer(portfolio_intro, parse_mode="Markdown")

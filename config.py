@@ -70,12 +70,44 @@ DEFAULT_MONITORED_CHANNELS = [
 # Hairdresser Portfolio (Services & Styles)
 PORTFOLIO_ITEMS = [
     {
-        "id": "style_1",
-        "title": "💇‍♀️ Стрижки, не требующие укладки",
-        "description": "Практичные, точные женские и мужские стрижки, которые отлично держат форму и прекрасно выглядят сами по себе даже после мытья головы.",
+        "id": "style_bob",
+        "title": "💇‍♀️ Классическое Каре (Bob Haircut)",
+        "description": "Точное, безупречное классическое каре, которое идеально держит форму без укладки. Отличный выбор для прямых или слегка волнистых волос.",
         "duration": "1 час",
         "price": "15-20€",
-        "photo": "https://images.unsplash.com/photo-1605497746444-ac9da58d440f?q=80&w=600&auto=format&fit=crop"
+        "photo": "https://raw.githubusercontent.com/senyazayka4-gif/chalkida-hair-bot/main/assets/bob_haircut.png"
+    },
+    {
+        "id": "style_cascade",
+        "title": "💇‍♀️ Многослойный Каскад (Cascading Cut)",
+        "description": "Объемная, текстурная стрижка слоями, создающая легкое и воздушное движение волос. Подходит для волос любой длины.",
+        "duration": "1 час",
+        "price": "15-20€",
+        "photo": "https://raw.githubusercontent.com/senyazayka4-gif/chalkida-hair-bot/main/assets/cascade_haircut.png"
+    },
+    {
+        "id": "style_pixie",
+        "title": "💇‍♀️ Текстурный Пикси (Modern Pixie)",
+        "description": "Стильная, смелая и ультрапрактичная короткая стрижка, которая подчеркивает черты лица и не требует абсолютно никакого ухода.",
+        "duration": "1 час",
+        "price": "15-20€",
+        "photo": "https://raw.githubusercontent.com/senyazayka4-gif/chalkida-hair-bot/main/assets/pixie_haircut.png"
+    },
+    {
+        "id": "style_wavy",
+        "title": "💇‍♀️ Волнистый Шегги (Wavy Shag Cut)",
+        "description": "Игривая, естественная стрижка для вьющихся и волнистых волос, подчеркивающая природную текстуру и завитки.",
+        "duration": "1 час",
+        "price": "15-20€",
+        "photo": "https://raw.githubusercontent.com/senyazayka4-gif/chalkida-hair-bot/main/assets/wavy_haircut.png"
+    },
+    {
+        "id": "style_straight",
+        "title": "💇‍♀️ Ровный срез (Blunt Straight Cut)",
+        "description": "Идеально прямой, плотный и геометрически точный срез для длинных волос, создающий эффект густоты и глянцевого блеска.",
+        "duration": "1 час",
+        "price": "15-20€",
+        "photo": "https://raw.githubusercontent.com/senyazayka4-gif/chalkida-hair-bot/main/assets/straight_haircut.png"
     }
 ]
 
