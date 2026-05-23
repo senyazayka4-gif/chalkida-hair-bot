@@ -98,10 +98,7 @@ def run_network_diagnostics():
     import socket
     import urllib.request
     logger.info("=== STARTING CLOUD NETWORK DIAGNOSTICS ===")
-    hosts = [
-        "api.telegram.org", "google.com", "huggingface.co", 
-        "api.telegram-proxy.org", "tg.i-c-a.su", "api.telegram.org.eu.org", "botapi.turing.sh"
-    ]
+    hosts = ["api.telegram.org", "google.com", "huggingface.co"]
     for host in hosts:
         try:
             ips = socket.getaddrinfo(host, 443)
@@ -109,42 +106,13 @@ def run_network_diagnostics():
         except Exception as e:
             logger.error(f"❌ DNS FAILED for {host}: {e}")
 
-    urls = [
-        "https://google.com", 
-        "https://api.telegram.org",
-        "https://api.telegram-proxy.org",
-        "https://tg.i-c-a.su",
-        "https://api.telegram.org.eu.org",
-        "https://botapi.turing.sh"
-    ]
-    for url in urls:
+    for url in ["https://google.com", "https://api.telegram.org"]:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=5) as response:
                 logger.info(f"🟢 HTTP SUCCESS: {url} returned status {response.status}")
         except Exception as e:
             logger.error(f"❌ HTTP FAILED for {url}: {e}")
-            
-    # Test direct socket connection to Telegram IPv4 on port 443
-    for ip, name in [("149.154.166.110", "Telegram"), ("78.47.169.47", "tg.i-c-a.su"), ("142.251.163.113", "Google")]:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(3)
-            s.connect((ip, 443))
-            logger.info(f"🟢 TCP CONNECT SUCCESS to {name} ({ip}:443)")
-            s.close()
-        except Exception as e:
-            logger.error(f"❌ TCP CONNECT FAILED to {name} ({ip}:443): {e}")
-
-    # Test proxy request to Telegram getMe
-    try:
-        url = f"https://tg.i-c-a.su/bot{config.BOT_TOKEN}/getMe"
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=5) as response:
-            logger.info(f"🟢 PROXY TEST SUCCESS: {url} returned status {response.status}")
-            logger.info(f"🟢 PROXY DATA: {response.read().decode()[:200]}")
-    except Exception as e:
-        logger.error(f"❌ PROXY TEST FAILED: {e}")
 
 
 async def main():
