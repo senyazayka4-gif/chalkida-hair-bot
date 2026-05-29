@@ -8,6 +8,52 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from google import generativeai as genai
 import config
 
+def is_injection(text: str) -> bool:
+    """
+    Verifies if the incoming local group post contains potential prompt injection strings.
+    Checks for English, Greek, Russian, and Ukrainian jailbreaks.
+    """
+    import re
+    patterns = [
+        # English jailbreak patterns
+        r"(?i)ignore\s+(?:all\s+)?(?:previous\s+)?instructions",
+        r"(?i)system\s+prompt\s+override",
+        r"(?i)you\s+are\s+now\s+a\s+",
+        r"(?i)forget\s+(?:all\s+)?(?:previous\s+)?rules",
+        r"(?i)instead\s+of\s+generating\s+",
+        r"(?i)dan\s+mode",
+        r"(?i)jailbreak",
+        
+        # Russian/Ukrainian jailbreak patterns
+        r"(?i)игнорируй\s+(?:все\s+)?(?:предыдущие\s+)?инструкции",
+        r"(?i)забудь\s+(?:все\s+)?(?:предыдущие\s+)?правила",
+        r"(?i)забудь\s+про\s+стрижки",
+        r"(?i)ты\s+теперь\s+не\s+помощник",
+        r"(?i)отвечай\s+только\s+как",
+        r"(?i)ігноруй\s+(?:всі\s+)?(?:попередні\s+)?інструкції",
+        r"(?i)забудь\s+(?:всі\s+)?(?:попередні\s+)?правила",
+        
+        # Greek jailbreak patterns
+        r"(?i)αγνόησε\s+(?:όλες\s+)?(?:τις\s+)?οδηγίες",
+        r"(?i)ξέχνα\s+(?:όλους\s+)?(?:τους\s+)?κανόνες",
+    ]
+    for pattern in patterns:
+        if re.search(pattern, text):
+            return True
+    return False
+
+def escape_markdown(text: str) -> str:
+    """
+    Escapes Markdown v1 special characters (*, _, [) to prevent rendering crashes.
+    """
+    if not text:
+        return ""
+    # Escape backslashes first, then other markdown v1 characters
+    escaped = text.replace("\\", "\\\\")
+    for char in ["*", "_", "["]:
+        escaped = escaped.replace(char, f"\\{char}")
+    return escaped
+
 # Initialize Gemini AI
 ai_enabled = False
 if config.GEMINI_API_KEY and config.GEMINI_API_KEY != "YOUR_GEMINI_API_KEY":
@@ -99,17 +145,39 @@ async def send_lead_card_to_admins(bot: Bot, lead_data: dict):
     text = lead_data["text"]
     lang = lead_data["lang"]
     
-    # Generate response draft
-    ai_draft = await generate_outreach_draft(text, lang)
+    # Check for prompt injection
+    if is_injection(text):
+        ai_draft = "⚠️ БЕЗОПАСНОСТЬ: Черновик заблокирован. В сообщении обнаружен подозрительный системный промпт (Prompt Injection Blocked)!"
+        is_threat = True
+    else:
+        ai_draft = await generate_outreach_draft(text, lang)
+        is_threat = False
+
+    # Escape strings to prevent Telegram Markdown formatting crashes
+    escaped_author = escape_markdown(author)
+    escaped_chat = escape_markdown(chat)
+    escaped_text = escape_markdown(text)
     
+    # Clean draft of triple backticks to preserve message box rendering
+    clean_draft = ai_draft.replace("```", "'''")
+
     admin_text = (
         f"🚨 *ОБНАРУЖЕН НОВЫЙ ЛИД (OSINT PARSER)* 🔎\n\n"
-        f"👥 *Источник:* @{chat}\n"
-        f"👤 *Автор:* @{author}\n"
+        f"👥 *Источник:* @{escaped_chat}\n"
+        f"👤 *Автор:* @{escaped_author}\n"
         f"📝 *Сообщение:* \n"
-        f"«_{text}_»\n\n"
+        f"«_{escaped_text}_»\n\n"
+    )
+    
+    if is_threat:
+        admin_text += (
+            f"🛑 *ВНИМАНИЕ:* Это сообщение содержит попытку атаки типа Prompt Injection!\n"
+            f"Запрос к Gemini заблокирован для безопасности.\n\n"
+        )
+        
+    admin_text += (
         f"🤖 *ИИ-Черновик ответа (AI Response Draft):*\n"
-        f"```{ai_draft}```\n\n"
+        f"```{clean_draft}```\n\n"
         f"💡 _Вы можете скопировать этот ответ и отправить его напрямую клиенту!_"
     )
     
